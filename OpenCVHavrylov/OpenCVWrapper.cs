@@ -136,7 +136,7 @@ namespace OpenCVHavrylov
                 Cv2.PutText(img, "Status:", new Point(20, 70), HersheyFonts.HersheySimplex, 0.7, new Scalar(255, 0, 255), 2);
 
 
-                var fps = Cv2.GetTickFrequency() / (Cv2.GetTickCount() - timer);
+                var fps = (int)(Cv2.GetTickFrequency() / (Cv2.GetTickCount() - timer));
                 Scalar myColor;
                 if (fps > 60)
                     myColor = new Scalar(20, 230, 20);
