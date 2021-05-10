@@ -2,7 +2,9 @@
 using System.IO;
 using System.Linq;
 using OpenCvSharp;
+using OpenCvSharp.Tracking;
 using OpenCvSharp.Dnn;
+using System.Windows.Input;
 
 namespace OpenCVHavrylov
 {
@@ -97,6 +99,60 @@ namespace OpenCVHavrylov
             srcImage.ImWrite(resultName);
             srcImage.Dispose();
             return faces.Length;
+        }
+
+        private static void DrawBox(Mat image, Rect2d bbox)
+        {
+            Cv2.Rectangle(image, rect: new Rect((int)bbox.X, (int)bbox.Y, (int)bbox.Width, (int)bbox.Height),
+                new Scalar(255, 0, 255), 3, LineTypes.Link8);
+            Cv2.PutText(image, "Tracking", new Point(100, 75), HersheyFonts.HersheySimplex, 0.7, new Scalar(0, 255, 0), 2);
+        }
+
+        public static void TrackObject()
+        {
+            var tracker = TrackerMOSSE.Create();
+            var cap = new VideoCapture();
+            cap.Open(0);
+            var image = new Mat();
+            cap.Read(image);
+            var bbox = Cv2.SelectROI("Tracking", image, false);
+            var bbox2d = new Rect2d(bbox.X, bbox.Y, bbox.Width, bbox.Height);
+            tracker.Init(image, bbox2d);
+            while (true)
+            {
+
+                var timer = Cv2.GetTickCount();
+                var img = new Mat();
+                var success = cap.Read(img);
+                success = tracker.Update(img, ref bbox2d);
+
+                if (success)
+                    DrawBox(img, bbox2d);
+                else
+                    Cv2.PutText(img, "Lost", new Point(100, 75), HersheyFonts.HersheySimplex, 0.7, new Scalar(0, 255, 0), 2);
+
+                Cv2.Rectangle(img, new Point(15, 15), new Point(200, 90), new Scalar(255, 0, 255), 2);
+                Cv2.PutText(img, "Fps:", new Point(20, 40), HersheyFonts.HersheySimplex, 0.7, new Scalar(255, 0, 255), 2);
+                Cv2.PutText(img, "Status:", new Point(20, 70), HersheyFonts.HersheySimplex, 0.7, new Scalar(255, 0, 255), 2);
+
+
+                var fps = Cv2.GetTickFrequency() / (Cv2.GetTickCount() - timer);
+                Scalar myColor;
+                if (fps > 60)
+                    myColor = new Scalar(20, 230, 20);
+                else if (fps > 20)
+                    myColor = new Scalar(230, 20, 20);
+                else
+                    myColor = new Scalar(20, 20, 230);
+                Cv2.PutText(img, fps.ToString(), new Point(75, 40), HersheyFonts.HersheySimplex, 0.7, myColor, 2);
+
+                Cv2.ImShow("Tracking", img);
+                if (Cv2.WaitKey(1) == 113)
+                {
+                    Cv2.DestroyWindow("Tracking");
+                    break;
+                }
+            }
         }
     }
 }
