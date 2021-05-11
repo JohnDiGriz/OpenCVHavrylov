@@ -5,8 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="morelinq" Version="3.3.2" />
     <PackageReference Include="OpenCvSharp4" Version="4.3.0.20200524" />
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.3.0.20200524" />
+    <PackageReference Include="Tesseract" Version="4.1.1" />
+    <PackageReference Include="Tesseract-OCR" Version="1.0.4" />
+    <PackageReference Include="Tesseract.Drawing" Version="4.1.1" />
   </ItemGroup>
 
 </Project>
