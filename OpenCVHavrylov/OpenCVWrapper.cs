@@ -144,67 +144,71 @@ namespace OpenCVHavrylov
             return blurred.Threshold(0, 255, ThresholdTypes.Binary);
         }
 
-        private static List<Mat> GetCNTHull(Mat image, out Mat[] contours)
+        private static OpenCvSharp.Point[] GetCNTHull(Mat image, out OpenCvSharp.Point[] contour)
         {
-            Mat hierarchy = new Mat();
-            image.FindContours(out contours, hierarchy, RetrievalModes.Tree, ContourApproximationModes.ApproxSimple);
-            contours = contours.MaxBy(x => x.ContourArea()).ToArray();
-            List<Mat> hull = new List<Mat>();
-            foreach (var contour in contours)
-            {
-                var thisHull = new Mat();
-                Cv2.ConvexHull(contour, thisHull);
-                hull.Add(thisHull);
-            }
+            HierarchyIndex[] hierarchies;
+            OpenCvSharp.Point[][] contours;
+            image.FindContours(out contours, out hierarchies, RetrievalModes.Tree, ContourApproximationModes.ApproxSimple);
+            contour = contours.MaxBy(x => Cv2.ContourArea(x)).FirstOrDefault();
+            OpenCvSharp.Point[] hull = Cv2.ConvexHull(contour);
             return hull;
         }
 
-        private static List<Mat> GetDefects(Mat[] contours)
+        private static int[] PointsToIndex(OpenCvSharp.Point[] set, OpenCvSharp.Point[] subset)
         {
-            List<Mat> defects = new List<Mat>();
-            foreach (var contour in contours)
+            int curSub = 0;
+            int[] res = new int[subset.Length];
+            for (int i = set.Length - 1; i >= 0; i--)
             {
-                var hull = new Mat();
-                Cv2.ConvexHull(contour, hull);
-                defects.Add(contour.ConvexityDefects(hull));
+                if (set[i] == subset[curSub])
+                {
+                    res[curSub] = i;
+                    curSub++;
+                }
             }
-            return defects;
+            return res;
+        }
+
+        private static Vec4i[] GetDefects(OpenCvSharp.Point[] contour)
+        {
+            var hull = Cv2.ConvexHull(contour);
+            return Cv2.ConvexityDefects(contour, PointsToIndex(contour, hull));
         }
 
         public static void DetectHand()
         {
-
             var cap = new VideoCapture();
             cap.Open(0);
             while (cap.IsOpened())
             {
-                var image = new Mat();
-                cap.Read(image);
                 try
                 {
+                    var image = new Mat();
+                    cap.Read(image);
                     var mask_img = Skinmask(image);
-                    Mat[] contours;
-                    var hull = GetCNTHull(mask_img, out contours);
-                    image.DrawContours(contours, -1, new Scalar(255, 255, 0), 2);
-                    image.DrawContours(hull, -1, new Scalar(0, 255, 255), 2);
-                    var defects = GetDefects(contours);
-                    if (defects.Count != 0)
+                    OpenCvSharp.Point[] contour;
+                    var hull = GetCNTHull(mask_img, out contour);
+                    image.DrawContours(new List<OpenCvSharp.Point[]>() { contour }, -1, new Scalar(255, 255, 0), 2);
+                    image.DrawContours(new List<OpenCvSharp.Point[]>() { hull }, -1, new Scalar(0, 255, 255), 2);
+                    var defects = GetDefects(contour);
+                    if (defects.Length != 0)
                     {
                         var cnt = 0;
-                        for (int i = 0; i < defects.Count; i++)
+                        for (int i = 0; i < defects.Length; i++)
                         {
-                            var start = contours[defects[i].At<int>(0, 0)];
-                            var end = contours[defects[i].At<int>(0, 1)];
-                            var far = contours[defects[i].At<int>(0, 2)];
-                            var a = Math.Sqrt(Math.Pow(end.At<int>(0, 0) - start.At<int>(0, 0), 2) + Math.Pow(end.At<int>(0, 1) - start.At<int>(0, 1), 2));
-                            var b = Math.Sqrt(Math.Pow(far.At<int>(0, 0) - start.At<int>(0, 0), 2) + Math.Pow(far.At<int>(0, 1) - start.At<int>(0, 1), 2));
-                            var c = Math.Sqrt(Math.Pow(end.At<int>(0, 0) - far.At<int>(0, 0), 2) + Math.Pow(end.At<int>(0, 1) - far.At<int>(0, 1), 2));
+                            var start = contour[defects[i][0]];
+                            var end = contour[defects[i][1]];
+                            var far = contour[defects[i][2]];
+                            var a = Math.Sqrt(Math.Pow(end.X - start.X, 2) + Math.Pow(end.Y - start.Y, 2));
+                            var b = Math.Sqrt(Math.Pow(far.X - start.X, 2) + Math.Pow(far.Y - start.Y, 2));
+                            var c = Math.Sqrt(Math.Pow(end.X - far.X, 2) + Math.Pow(end.Y - far.Y, 2));
                             var angle = Math.Acos((b * b + c * c - a * a) / (2 * b * c));
                             if (angle <= Math.PI / 2.0)
                             {
                                 cnt++;
-                                Cv2.Circle(image, new OpenCvSharp.Point(far.At<int>(0, 0), far.At<int>(0, 1)), 4, new Scalar(0, 0, 255), -1);
+                                Cv2.Circle(image, far, 4, new Scalar(0, 0, 255), -1);
                             }
+
                         }
                         if (cnt > 0)
                             cnt++;
@@ -234,6 +238,7 @@ namespace OpenCVHavrylov
             cap.Open(0);
             var image = new Mat();
             cap.Read(image);
+            Cv2.ImShow("Debug", image);
             var bbox = Cv2.SelectROI("Tracking", image, false);
             var bbox2d = new Rect2d(bbox.X, bbox.Y, bbox.Width, bbox.Height);
             tracker.Init(image, bbox2d);
