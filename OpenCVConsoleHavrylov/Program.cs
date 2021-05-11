@@ -11,7 +11,7 @@ namespace OpenCVConsoleHavrylov
         {
             while (true)
             {
-                Console.WriteLine("Press f for face recognition\nPress t for object tracking\nPress r for text recognition\nPress h for hand recognition\nPress q for exit");
+                Console.WriteLine("Press f for face recognition\nPress t for object tracking\nPress r for text recognition\nPress h for hand recognition\nPress q for QR Code\nPress e for exit");
                 var key = Console.ReadKey();
                 Console.WriteLine();
 
@@ -36,6 +36,12 @@ namespace OpenCVConsoleHavrylov
                     else if (key.Key == ConsoleKey.H)
                         OpenCVWrapper.DetectHand();
                     else if (key.Key == ConsoleKey.Q)
+                    {
+                        Console.WriteLine("Enter Image Path: ");
+                        var path = Console.ReadLine();
+                        Console.WriteLine($"Result:\n {OpenCVWrapper.DecodeQR(path)}");
+                    }
+                    else if (key.Key == ConsoleKey.E)
                         break;
                     Console.WriteLine("Press any key");
                     Console.ReadKey();
