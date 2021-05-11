@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using OpenCVHavrylov;
 using System.IO;
 using System.Linq;
@@ -11,7 +11,7 @@ namespace OpenCVConsoleHavrylov
         {
             while (true)
             {
-                Console.WriteLine("Press f for face recognition, press t for object tracking, q for exit");
+                Console.WriteLine("Press f for face recognition\nPress t for object tracking\nPress r for text recognition\nPress h for hand recognition\nPress q for exit");
                 var key = Console.ReadKey();
                 Console.WriteLine();
 
@@ -25,8 +25,16 @@ namespace OpenCVConsoleHavrylov
                         var result = path == null ? $"{Directory.GetCurrentDirectory()}/result.png" : $"{path}result.{path.Split('.').Last()}";
                         Console.WriteLine($"Resulting image saved as {result}");
                     }
+                    else if (key.Key == ConsoleKey.R)
+                    {
+                        Console.WriteLine("Enter Image Path: ");
+                        var path = Console.ReadLine();
+                        Console.WriteLine($"Text:\n {OpenCVWrapper.ReadText(path)}");
+                    }
                     else if (key.Key == ConsoleKey.T)
                         OpenCVWrapper.TrackObject();
+                    else if (key.Key == ConsoleKey.H)
+                        OpenCVWrapper.DetectHand();
                     else if (key.Key == ConsoleKey.Q)
                         break;
                     Console.WriteLine("Press any key");
